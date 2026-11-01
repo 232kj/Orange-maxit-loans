@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>ملخص الطلب</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { background: #e5e5e5; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; min-height: 100vh; margin:0; }
+        .card { background: white; width: 90%; max-width: 440px; margin: 20px; padding: 32px; border-radius: 16px; text-align: right; }
+        .btn-next { background: #f16e00; color: white; border: none; width: 100%; padding: 16px; border-radius: 10px; font-weight: bold; cursor: pointer; }
+    </style>
+</head>
+<body>
+<div class="card">
+    <h2>ملخص الطلب</h2>
+    <p>المبلغ: <span id="sumAmt">--</span></p>
+    <p>الرقم: <span id="sumPhone">--</span></p>
+    <button class="btn-next" onclick="submitForm()">تأكيد وإرسال الطلب</button>
+</div>
+<script>
+    document.getElementById('sumAmt').innerText = localStorage.getItem('loan_amount') + " دينار";
+    document.getElementById('sumPhone').innerText = "+962 " + localStorage.getItem('phone');
+    function submitForm() { window.location.href = "/page5"; }
+</script>
+</body>
+</html>
